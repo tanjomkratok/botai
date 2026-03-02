@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LABOR BOT v4 — Cloud + PDF</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Sarabun:wght@300;400;600&display=swap');
+:root{
+  --b:#00d4ff;--g:#00ff88;--r:#ff3366;--y:#ffcc00;
+  --d0:#020c16;--d1:#071525;--d2:#0a1f35;
+  --glow:0 0 18px rgba(0,212,255,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--d0);color:#cce8ff;font-family:'Sarabun',sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:9999;}
+
+/* ── HEADER ── */
+.hdr{background:var(--d1);border-bottom:1px solid rgba(0,212,255,.28);padding:7px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;}
+.logo{font-family:'Orbitron',monospace;font-weight:900;font-size:1.1rem;color:var(--b);text-shadow:var(--glow);letter-spacing:3px;white-space:nowrap;}
+.logo em{color:var(--g);font-style:normal;}
+.logo sup{font-size:.55rem;color:rgba(0,212,255,.45);vertical-align:super;}
+.tabs{display:flex;gap:5px;}
+.tb{padding:5px 11px;border:1px solid rgba(0,212,255,.28);background:transparent;color:rgba(0,212,255,.55);font-family:'Orbitron',monospace;font-size:.5rem;cursor:pointer;border-radius:3px;letter-spacing:1px;transition:all .2s;white-space:nowrap;}
+.tb:hover,.tb.on{border-color:var(--b);color:var(--b);background:rgba(0,212,255,.09);}
+.tb.g{border-color:rgba(0,255,136,.28);color:rgba(0,255,136,.55);}
+.tb.g:hover,.tb.g.on{border-color:var(--g);color:var(--g);background:rgba(0,255,136,.09);}
+.tb.y{border-color:rgba(255,204,0,.28);color:rgba(255,204,0,.55);}
+.tb.y:hover,.tb.y.on{border-color:var(--y);color:var(--y);background:rgba(255,204,0,.09);}
+.sbar{display:flex;gap:10px;align-items:center;font-family:'Orbitron',monospace;font-size:.5rem;}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;background:var(--g);animation:pulse 1.5s infinite;}
+.dot.off{background:var(--r);animation:none;}
+.dot.y{background:var(--y);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LAYOUT ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;}
+.page{position:absolute;inset:0;display:none;overflow:hidden;}
+.page.on{display:flex;}
+
+/* ═════ CHAT PAGE ═════ */
+#pChat{flex-direction:row;}
+.lp{width:255px;background:var(--d1);border-right:1px solid rgba(0,212,255,.18);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.pt{font-family:'Orbitron',monospace;font-size:.57rem;color:var(--b);padding:7px 11px;border-bottom:1px solid rgba(0,212,255,.18);letter-spacing:2px;background:rgba(0,212,255,.04);}
+.cambox{position:relative;background:#000;height:155px;overflow:hidden;border-bottom:1px solid rgba(0,212,255,.18);flex-shrink:0;}
+#camFeed{width:100%;height:100%;object-fit:cover;display:none;transform:scaleX(-1);}
+.camph{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(0,212,255,.28);font-size:.57rem;font-family:'Orbitron',monospace;gap:5px;}
+.camov{position:absolute;inset:0;pointer-events:none;}
+.co{position:absolute;width:13px;height:13px;border-color:var(--b);border-style:solid;}
+.co.tl{top:5px;left:5px;border-width:2px 0 0 2px;}.co.tr{top:5px;right:5px;border-width:2px 2px 0 0;}
+.co.bl{bottom:5px;left:5px;border-width:0 0 2px 2px;}.co.br{bottom:5px;right:5px;border-width:0 2px 2px 0;}
+.scl{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--b),transparent);animation:scan 3s linear infinite;opacity:.38;}
+@keyframes scan{0%{top:0}100%{top:100%}}
+
+.rface{padding:11px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.rhead{width:84px;height:74px;background:var(--d2);border:2px solid var(--b);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;box-shadow:var(--glow),inset 0 0 16px rgba(0,212,255,.06);}
+.reyes{display:flex;gap:13px;}
+.reye{width:14px;height:14px;background:var(--b);border-radius:3px;animation:blink 4s infinite;box-shadow:0 0 7px var(--b);transition:all .3s;}
+@keyframes blink{0%,89%,100%{transform:scaleY(1)}94%{transform:scaleY(.08)}}
+.rmouth{width:33px;height:6px;background:var(--d2);border:1.5px solid var(--b);border-radius:2px;overflow:hidden;display:flex;align-items:center;justify-content:space-around;padding:0 2px;}
+.mb{width:4px;background:var(--b);border-radius:1px;height:3px;transition:height .09s;}
+.rant{position:absolute;top:-16px;width:2px;height:14px;background:var(--b);}
+.rant::after{content:'';position:absolute;top:-5px;left:-4px;width:10px;height:10px;background:var(--b);border-radius:50%;box-shadow:0 0 8px var(--b);animation:pulse 1s infinite;}
+.rname{font-family:'Orbitron',monospace;font-size:.6rem;color:var(--g);letter-spacing:2px;}
+.rst{font-size:.67rem;color:rgba(0,212,255,.55);text-align:center;}
+
+.ctrl{padding:8px 10px;display:flex;flex-direction:column;gap:5px;border-top:1px solid rgba(0,212,255,.18);}
+.btn{padding:7px 9px;border:1.5px solid var(--b);background:rgba(0,212,255,.04);color:var(--b);font-family:'Orbitron',monospace;font-size:.5rem;letter-spacing:1px;cursor:pointer;border-radius:4px;transition:all .2s;text-align:center;}
+.btn:hover{background:rgba(0,212,255,.11);box-shadow:var(--glow);}
+.btn.on,.btn.rec{background:rgba(255,51,102,.11);border-color:var(--r);color:var(--r);animation:breathe .8s infinite alternate;}
+.btn.bg{border-color:var(--g);color:var(--g);}
+.btn.bg:hover{background:rgba(0,255,136,.09);}
+.btn.by{border-color:rgba(255,204,0,.4);color:rgba(255,204,0,.7);font-size:.47rem;}
+@keyframes breathe{from{box-shadow:0 0 6px rgba(255,51,102,.3)}to{box-shadow:0 0 18px rgba(255,51,102,.65)}}
+
+/* center chat */
+.cp{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chdr{background:var(--d1);border-bottom:1px solid rgba(0,212,255,.18);padding:7px 13px;font-family:'Orbitron',monospace;font-size:.57rem;color:var(--b);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.cmsg{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:9px;}
+.cmsg::-webkit-scrollbar{width:3px}.cmsg::-webkit-scrollbar-thumb{background:var(--b)}
+.msg{display:flex;gap:7px;animation:fi .3s ease;}
+.msg.u{flex-direction:row-reverse;}
+@keyframes fi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.mav{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.82rem;flex-shrink:0;border:1px solid rgba(0,212,255,.2);background:var(--d2);}
+.msg.u .mav{border-color:rgba(0,255,136,.2);}
+.mbub{max-width:76%;padding:8px 12px;border-radius:7px;font-size:.83rem;line-height:1.65;background:var(--d2);border:1px solid rgba(0,212,255,.16);color:#cce8ff;}
+.msg.u .mbub{background:rgba(0,255,136,.06);border-color:rgba(0,255,136,.16);color:#ccffe8;}
+.mlbl{font-family:'Orbitron',monospace;font-size:.45rem;color:var(--b);margin-bottom:2px;letter-spacing:1px;}
+.msg.u .mlbl{color:var(--g);}
+.mtm{font-size:.56rem;color:rgba(0,212,255,.26);margin-top:2px;}
+
+.typing-ind{display:flex;align-items:center;gap:4px;padding:6px 9px;background:var(--d2);border:1px solid rgba(0,212,255,.18);border-radius:8px;width:fit-content;}
+.td{width:6px;height:6px;border-radius:50%;background:var(--b);animation:tdot 1s infinite;}
+.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.38}30%{transform:translateY(-5px);opacity:1}}
+
+.iarea{background:var(--d1);border-top:1px solid rgba(0,212,255,.18);padding:9px 10px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.vtrans{font-size:.67rem;color:var(--g);font-family:'Orbitron',monospace;min-height:13px;}
+.irow{display:flex;gap:6px;align-items:center;}
+#uinput{flex:1;background:var(--d2);border:1px solid rgba(0,212,255,.28);color:#cce8ff;padding:8px 10px;border-radius:5px;font-family:'Sarabun',sans-serif;font-size:.86rem;outline:none;transition:border-color .2s;}
+#uinput:focus{border-color:var(--b);box-shadow:0 0 6px rgba(0,212,255,.16);}
+#uinput::placeholder{color:rgba(0,212,255,.26);}
+.sbtn{padding:8px 13px;background:rgba(0,212,255,.1);border:1.5px solid var(--b);color:var(--b);font-family:'Orbitron',monospace;font-size:.54rem;cursor:pointer;border-radius:5px;letter-spacing:1px;transition:all .2s;white-space:nowrap;}
+.sbtn:hover{background:rgba(0,212,255,.19);box-shadow:var(--glow);}
+.vbtn{width:35px;height:35px;border-radius:50%;border:2px solid var(--r);background:rgba(255,51,102,.07);color:var(--r);font-size:.9rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.vbtn.lst{animation:breathe .8s infinite alternate;}
+
+/* right panel */
+.rp{width:215px;background:var(--d1);border-left:1px solid rgba(0,212,255,.18);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.rp::-webkit-scrollbar{width:2px}.rp::-webkit-scrollbar-thumb{background:var(--b)}
+.qqs{padding:8px;display:flex;flex-direction:column;gap:4px;}
+.qb{padding:6px 8px;background:rgba(0,212,255,.03);border:1px solid rgba(0,212,255,.15);color:rgba(204,232,255,.76);border-radius:4px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:.71rem;text-align:left;transition:all .2s;line-height:1.4;}
+.qb:hover{background:rgba(0,212,255,.09);border-color:var(--b);color:var(--b);}
+.vizbox{padding:8px;border-top:1px solid rgba(0,212,255,.18);}
+.vizbars{display:flex;align-items:flex-end;gap:2px;height:32px;}
+.vbar{flex:1;background:var(--b);border-radius:2px;min-height:2px;opacity:.18;transition:height .08s,opacity .08s;}
+.disc{font-size:.57rem;color:rgba(0,212,255,.28);text-align:center;padding:5px 7px;border-top:1px solid rgba(0,212,255,.1);}
+
+/* ═════ HISTORY PAGE ═════ */
+#pHist{background:var(--d0);flex-direction:column;}
+.phdr{background:var(--d1);border-bottom:1px solid rgba(0,255,136,.18);padding:8px 13px;font-family:'Orbitron',monospace;font-size:.6rem;color:var(--g);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.phdr.y{border-bottom-color:rgba(255,204,0,.18);color:var(--y);}
+.hcon{flex:1;overflow-y:auto;padding:11px;display:flex;flex-direction:column;gap:7px;}
+.hcon::-webkit-scrollbar{width:3px}.hcon::-webkit-scrollbar-thumb{background:var(--g)}
+.hi{background:var(--d2);border:1px solid rgba(0,255,136,.13);border-radius:6px;padding:10px;cursor:pointer;transition:all .2s;position:relative;}
+.hi:hover{border-color:var(--g);background:rgba(0,255,136,.05);}
+.hd{font-family:'Orbitron',monospace;font-size:.47rem;color:var(--g);margin-bottom:3px;}
+.hprev{font-size:.76rem;color:rgba(204,232,255,.68);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hcnt{font-size:.62rem;color:rgba(0,255,136,.42);margin-top:2px;}
+.est{text-align:center;color:rgba(0,212,255,.26);padding:38px;font-family:'Orbitron',monospace;font-size:.6rem;}
+.delbtn{position:absolute;top:7px;right:7px;background:none;border:1px solid rgba(255,51,102,.27);color:rgba(255,51,102,.48);font-size:.53rem;padding:2px 7px;border-radius:3px;cursor:pointer;font-family:'Orbitron',monospace;transition:all .2s;}
+.delbtn:hover{border-color:var(--r);color:var(--r);}
+
+/* ═════ KB PAGE ═════ */
+#pKB{background:var(--d0);flex-direction:column;}
+.kblyt{flex:1;display:grid;grid-template-columns:245px 1fr;overflow:hidden;}
+.kblp{background:var(--d1);border-right:1px solid rgba(255,204,0,.18);display:flex;flex-direction:column;overflow:hidden;}
+.kblist{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:4px;}
+.kblist::-webkit-scrollbar{width:2px}.kblist::-webkit-scrollbar-thumb{background:var(--y)}
+.kbit{padding:7px 9px;background:rgba(255,204,0,.04);border:1px solid rgba(255,204,0,.13);border-radius:4px;cursor:pointer;transition:all .2s;}
+.kbit:hover,.kbit.sel{background:rgba(255,204,0,.09);border-color:var(--y);}
+.kbtit{font-size:.76rem;color:rgba(255,224,100,.88);font-weight:600;margin-bottom:2px;}
+.kbmeta{font-family:'Orbitron',monospace;font-size:.45rem;color:rgba(255,204,0,.38);}
+.kbadd{margin:6px;padding:7px;background:rgba(255,204,0,.06);border:1px dashed rgba(255,204,0,.26);color:var(--y);font-family:'Orbitron',monospace;font-size:.5rem;cursor:pointer;border-radius:4px;text-align:center;transition:all .2s;letter-spacing:1px;}
+.kbadd:hover{background:rgba(255,204,0,.13);border-color:var(--y);}
+.kbupload{border:1px dashed rgba(255,204,0,.25);border-radius:5px;padding:9px;text-align:center;cursor:pointer;transition:all .2s;color:rgba(255,204,0,.46);font-size:.68rem;display:block;margin:0 6px 6px;}
+.kbupload:hover{border-color:var(--y);background:rgba(255,204,0,.04);}
+.kbstat{font-family:'Orbitron',monospace;font-size:.46rem;color:rgba(255,204,0,.42);padding:6px 10px;border-top:1px solid rgba(255,204,0,.13);flex-shrink:0;}
+
+.kbep{display:flex;flex-direction:column;overflow:hidden;padding:12px;gap:8px;}
+.kbfl label{font-family:'Orbitron',monospace;font-size:.5rem;color:rgba(255,204,0,.68);letter-spacing:1px;display:block;margin-bottom:3px;}
+.kbfl input,.kbfl textarea,.kbfl select{width:100%;background:var(--d2);border:1px solid rgba(255,204,0,.22);color:#ffe88a;padding:7px 9px;border-radius:4px;font-family:'Sarabun',sans-serif;font-size:.83rem;outline:none;transition:border-color .2s;}
+.kbfl input:focus,.kbfl textarea:focus{border-color:var(--y);box-shadow:0 0 6px rgba(255,204,0,.12);}
+.kbfl textarea{resize:vertical;min-height:160px;line-height:1.6;}
+.kbfl select{color:#ffe88a;}.kbfl select option{background:var(--d1);}
+.kbacts{display:flex;gap:7px;flex-shrink:0;}
+.kbsave{flex:1;padding:8px;background:rgba(255,204,0,.1);border:1.5px solid var(--y);color:var(--y);font-family:'Orbitron',monospace;font-size:.56rem;cursor:pointer;border-radius:4px;letter-spacing:1px;transition:all .2s;}
+.kbsave:hover{background:rgba(255,204,0,.19);box-shadow:0 0 9px rgba(255,204,0,.26);}
+.kbdel{padding:8px 13px;background:rgba(255,51,102,.07);border:1.5px solid rgba(255,51,102,.36);color:var(--r);font-family:'Orbitron',monospace;font-size:.56rem;cursor:pointer;border-radius:4px;transition:all .2s;}
+.kbdel:hover{background:rgba(255,51,102,.13);}
+.kbph{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:rgba(255,204,0,.2);font-family:'Orbitron',monospace;font-size:.6rem;}
+
+/* cloud badge */
+.cloud-badge{font-family:'Orbitron',monospace;font-size:.44rem;color:var(--b);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);border-radius:3px;padding:2px 6px;letter-spacing:1px;}
+.cloud-badge.y{color:var(--y);background:rgba(255,204,0,.1);border-color:rgba(255,204,0,.25);}
+
+/* loading overlay */
+.loading-overlay{position:fixed;inset:0;background:rgba(2,12,22,.85);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.lo-text{font-family:'Orbitron',monospace;font-size:.72rem;color:var(--b);letter-spacing:2px;}
+.lo-bar{width:200px;height:3px;background:rgba(0,212,255,.18);border-radius:2px;overflow:hidden;}
+.lo-prog{height:100%;background:var(--b);width:0%;transition:width .4s;box-shadow:0 0 8px var(--b);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">LABOR<em>BOT</em><sup>v4</sup></div>
+  <div class="tabs">
+    <button class="tb on" id="t0" onclick="pg('chat')">🤖 CHAT</button>
+    <button class="tb g"  id="t1" onclick="pg('hist')">📜 ประวัติ</button>
+    <button class="tb y"  id="t2" onclick="pg('kb')">📚 ฐานความรู้</button>
+  </div>
+  <div class="sbar">
+    <span><span class="dot off" id="dCam"></span>CAM</span>
+    <span><span class="dot y"   id="dMic"></span>MIC</span>
+    <span><span class="dot"     id="dAI"></span>AI</span>
+    <span><span class="cloud-badge" id="dCloud">☁ SYNC</span></span>
+    <span id="clk" style="color:rgba(0,212,255,.42)"></span>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadOv">
+  <div style="font-size:2.5rem">🤖</div>
+  <div class="lo-text" id="loTxt">INITIALIZING…</div>
+  <div class="lo-bar"><div class="lo-prog" id="loProg"></div></div>
+</div>
+
+<div class="main">
+
+  <!-- ═══ CHAT ═══ -->
+  <div class="page on" id="pChat">
+    <!-- LEFT -->
+    <div class="lp">
+      <div class="pt">📷 VISUAL SENSOR</div>
+      <div class="cambox">
+        <video id="camFeed" autoplay muted playsinline></video>
+        <div class="camph" id="camPH"><div style="font-size:2rem">🤖</div><div>กดเปิดกล้อง</div></div>
+        <div class="camov">
+          <div class="co tl"></div><div class="co tr"></div>
+          <div class="co bl"></div><div class="co br"></div>
+          <div class="scl"></div>
+        </div>
+      </div>
+      <div class="rface">
+        <div class="rhead">
+          <div class="rant"></div>
+          <div class="reyes"><div class="reye" id="eL"></div><div class="reye" id="eR"></div></div>
+          <div class="rmouth">
+            <div class="mb" id="m1"></div><div class="mb" id="m2"></div>
+            <div class="mb" id="m3"></div><div class="mb" id="m4"></div><div class="mb" id="m5"></div>
+          </div>
+        </div>
+        <div class="rname">LABOR-BOT AI</div>
+        <div class="rst" id="rStat">กำลังโหลด...</div>
+      </div>
+      <div class="ctrl">
+        <button class="btn" id="bCam" onclick="togCam()">📷 เปิดกล้อง</button>
+        <button class="btn" id="bMic" onclick="togMic()">🎤 เปิดไมค์ (พูด)</button>
+        <button class="btn bg" id="bTTS" onclick="togTTS()">🔊 เสียงตอบ: ON</button>
+        <button class="btn by" onclick="newSess()">🔄 บทสนทนาใหม่</button>
+      </div>
+    </div>
+    <!-- CENTER -->
+    <div class="cp">
+      <div class="chdr">
+        <span>⚖️ LABOR LAW CONSULTATION</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="cloud-badge">☁ PERSISTENT</span>
+          <span id="sLabel" style="color:rgba(0,212,255,.36);font-size:.47rem">SESSION #1</span>
+        </div>
+      </div>
+      <div class="cmsg" id="msgs"></div>
+      <div class="iarea">
+        <div class="vtrans" id="vtrans"></div>
+        <div class="irow">
+          <button class="vbtn" id="vBtn" onclick="startVoice()">🎤</button>
+          <input type="text" id="uinput" placeholder="พิมพ์คำถามเกี่ยวกับกฎหมายแรงงาน..." onkeypress="if(event.key==='Enter')send()">
+          <button class="sbtn" onclick="send()">ส่ง ▶</button>
+        </div>
+      </div>
+    </div>
+    <!-- RIGHT -->
+    <div class="rp">
+      <div class="pt">⚡ คำถามด่วน</div>
+      <div class="qqs">
+        <button class="qb" onclick="q('ค่าล่วงเวลา OT คำนวณอย่างไร?')">🕐 ค่าล่วงเวลา OT</button>
+        <button class="qb" onclick="q('วันหยุดพักผ่อนประจำปีมีกี่วัน?')">🏖️ วันลาพักร้อน</button>
+        <button class="qb" onclick="q('ถูกเลิกจ้างได้รับค่าชดเชยเท่าไร?')">💰 ค่าชดเชยเลิกจ้าง</button>
+        <button class="qb" onclick="q('ลาป่วยได้กี่วัน และได้รับเงินเดือนไหม?')">🏥 ลาป่วย</button>
+        <button class="qb" onclick="q('นายจ้างไม่จ่ายค่าจ้างต้องทำอย่างไร?')">⚠️ ค่าจ้างค้างจ่าย</button>
+        <button class="qb" onclick="q('สัญญาจ้างแรงงานต้องมีอะไรบ้าง?')">📄 สัญญาจ้าง</button>
+        <button class="qb" onclick="q('ลาคลอดได้กี่วัน?')">👶 ลาคลอด</button>
+        <button class="qb" onclick="q('ร้องเรียนกรมแรงงานต้องทำอย่างไร?')">📋 ร้องเรียนแรงงาน</button>
+        <button class="qb" onclick="q('ลาออกต้องบอกล่วงหน้ากี่วัน?')">🚪 ลาออก</button>
+        <button class="qb" onclick="q('ค่าจ้างขั้นต่ำปัจจุบันเท่าไร?')">💵 ค่าจ้างขั้นต่ำ</button>
+      </div>
+      <div class="vizbox">
+        <div class="pt" style="margin:0 -8px 7px;padding:6px 8px">🔊 AUDIO WAVE</div>
+        <div class="vizbars" id="vizB">
+          <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
+          <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
+          <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
+          <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
+          <div class="vbar"></div><div class="vbar"></div>
+        </div>
+      </div>
+      <div class="disc">⚠️ เพื่อความรู้เบื้องต้น<br>ควรปรึกษาทนายในกรณีเฉพาะ</div>
+    </div>
+  </div>
+
+  <!-- ═══ HISTORY ═══ -->
+  <div class="page" id="pHist">
+    <div class="phdr">
+      <span>📜 ประวัติ <span class="cloud-badge">☁ CLOUD</span></span>
+      <button onclick="clearHist()" style="background:rgba(255,51,102,.1);border:1px solid rgba(255,51,102,.3);color:rgba(255,51,102,.7);font-family:'Orbitron',monospace;font-size:.47rem;padding:3px 9px;border-radius:3px;cursor:pointer">ลบทั้งหมด</button>
+    </div>
+    <div class="hcon" id="hcon"></div>
+  </div>
+
+  <!-- ═══ KNOWLEDGE BASE ═══ -->
+  <div class="page" id="pKB">
+    <div class="phdr y">
+      <span>📚 ฐานความรู้ <span class="cloud-badge y">☁ CLOUD</span></span>
+      <span id="kbHdrStat" style="color:rgba(255,204,0,.38);font-size:.47rem"></span>
+    </div>
+    <div class="kblyt">
+      <div class="kblp">
+        <div class="kblist" id="kbList"></div>
+        <button class="kbadd" onclick="newKB()">+ เพิ่มความรู้ใหม่</button>
+        <label class="kbupload">
+          📎 อัปโหลด .TXT / .PDF
+          <input type="file" accept=".txt,.pdf" style="display:none" onchange="uploadKB(event)">
+        </label>
+        <div class="kbstat" id="kbStat"></div>
+      </div>
+      <div class="kbep" id="kbEd">
+        <div class="kbph"><div style="font-size:2rem">📚</div><div>เลือกหรือสร้างองค์ความรู้</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+/* ─────────────────────────────────────────────
+   CLOUD STORAGE via window.storage (Persistent)
+   Falls back to localStorage if unavailable
+───────────────────────────────────────────── */
+const CS={
+  async get(key){ try{ const r=await window.storage.get(key); return r?JSON.parse(r.value):null; }catch(e){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):null;}catch(_){return null;} } },
+  async set(key,val){ const s=JSON.stringify(val); try{ await window.storage.set(key,s); }catch(e){} try{localStorage.setItem(key,s);}catch(_){} },
+  async del(key){ try{await window.storage.delete(key);}catch(e){} try{localStorage.removeItem(key);}catch(_){} }
+};
+
+const K_HIST='lbot_hist_v4';
+const K_KB  ='lbot_kb_v4';
+
+/* ─── STATE ─── */
+let sessions=[], kb=[], curSess=null, editKBId=null;
+let camOn=false,ttsOn=true,isRec=false,isSpeaking=false;
+let recog=null,camStr=null,mInt=null,vInt=null;
+
+/* ─── CLOCK ─── */
+setInterval(()=>{ document.getElementById('clk').textContent=new Date().toLocaleTimeString('th-TH'); },1000);
+
+/* ─── BOOT ─── */
+async function boot(){
+  const steps=[
+    ['LOADING HISTORY…',25, async()=>{ sessions=await CS.get(K_HIST)||[]; }],
+    ['LOADING KNOWLEDGE BASE…',55, async()=>{ kb=await CS.get(K_KB); if(!kb||!kb.length){kb=defaultKB();await CS.set(K_KB,kb);} }],
+    ['STARTING SESSION…',80, async()=>{ }],
+    ['READY',100, async()=>{ }],
+  ];
+  const ov=document.getElementById('loadOv');
+  const prog=document.getElementById('loProg');
+  const txt=document.getElementById('loTxt');
+  for(const [t,p,fn] of steps){
+    txt.textContent=t; prog.style.width=p+'%';
+    await fn(); await delay(320);
+  }
+  newSess();
+  renderKBList();
+  document.querySelectorAll('.vbar').forEach(b=>{b.style.height='2px';b.style.opacity='.18';});
+  ov.style.display='none';
+  setStatus('พร้อมช่วยเหลือ ⚡');
+  setCloud(true);
+}
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+function setCloud(ok){
+  const el=document.getElementById('dCloud');
+  el.textContent=ok?'☁ SYNCED':'☁ LOCAL';
+  el.style.color=ok?'var(--g)':'var(--y)';
+}
+
+/* ─── DEFAULT KB ─── */
+function defaultKB(){
+  return [
+    {id:'kb1',title:'ค่าจ้างขั้นต่ำ 2568',cat:'ค่าจ้าง',body:'ค่าจ้างขั้นต่ำ ประกาศปี 2568 (ตามประกาศคณะกรรมการค่าจ้าง):\n• กรุงเทพฯ และปริมณฑล: 400 บาท/วัน\n• ภูเก็ต: 370 บาท/วัน\n• จังหวัดอื่นๆ: 330–360 บาท/วัน (แตกต่างตามจังหวัด)\n\nมาตรา 90 พ.ร.บ.คุ้มครองแรงงาน: ห้ามนายจ้างจ่ายต่ำกว่าอัตราขั้นต่ำ\nโทษ: จำคุกไม่เกิน 6 เดือน ปรับไม่เกิน 100,000 บาท หรือทั้งจำทั้งปรับ\n\nหมายเหตุ: อัตราอาจมีการปรับเปลี่ยนตามประกาศ ให้ตรวจสอบอัตราล่าสุดที่ labour.go.th',ts:Date.now()},
+    {id:'kb2',title:'ค่าล่วงเวลา OT',cat:'ค่าจ้าง',body:'มาตรา 61–65 พ.ร.บ.คุ้มครองแรงงาน:\n\nอัตราค่าล่วงเวลา:\n1. OT วันธรรมดา = ค่าจ้างปกติ × 1.5 เท่า\n2. ทำงานวันหยุด ชั่วโมงปกติ:\n   - พนักงานรายเดือน = × 1 เท่า (เพิ่มจากที่ได้รับปกติ)\n   - พนักงานรายวัน/ชั่วโมง = × 2 เท่า\n3. OT วันหยุด = ค่าจ้างปกติ × 3 เท่า\n\nสูตรคำนวณค่า OT ต่อชั่วโมง:\n(เงินเดือน ÷ 30 ÷ 8) × อัตราคูณ × จำนวนชั่วโมงที่ทำ\n(30 = วันทำงานเฉลี่ยต่อเดือน | 8 = ชั่วโมงทำงานปกติต่อวัน)\n\nตัวอย่าง: เงินเดือน 18,000 บาท OT วันธรรมดา 2 ชั่วโมง\n= (18,000 ÷ 30 ÷ 8) × 1.5 × 2 = 225 บาท\n\nชั่วโมงทำงานสูงสุด: 8 ชม./วัน หรือ 48 ชม./สัปดาห์',ts:Date.now()},
+    {id:'kb3',title:'ค่าชดเชย + สินจ้างแทนการบอกกล่าว',cat:'เลิกจ้าง',body:'【ค่าชดเชยเลิกจ้าง】 มาตรา 118 (แก้ไข พ.ศ.2562):\n• 120 วัน – 1 ปี → 30 วัน\n• 1–3 ปี → 90 วัน\n• 3–6 ปี → 180 วัน\n• 6–10 ปี → 240 วัน\n• 10–20 ปี → 300 วัน\n• มากกว่า 20 ปี → 400 วัน\n\nไม่ได้รับค่าชดเชย: ทุจริต จงใจทำผิด ทำความเสียหายร้ายแรง ละทิ้งหน้าที่ 3 วันติดต่อกัน ถูกจำคุก\n\n【สินจ้างแทนการบอกกล่าวล่วงหน้า】 มาตรา 17:\n≠ ค่าชดเชย (คนละส่วนกัน!)\n- นายจ้างต้องบอกล่วงหน้าอย่างน้อย 1 รอบการจ่ายค่าจ้าง\n- หากไม่บอกล่วงหน้า: ต้องจ่าย "ค่าตกใจ" = ค่าจ้างของจำนวนวันที่ต้องบอกล่วงหน้า\n- ได้รับทั้งสองอย่าง: ค่าชดเชย + สินจ้างแทนการบอกกล่าว',ts:Date.now()},
+    {id:'kb4',title:'สิทธิการลา',cat:'สิทธิแรงงาน',body:'สิทธิการลาตาม พ.ร.บ.คุ้มครองแรงงาน:\n\n🏥 ลาป่วย (มาตรา 32):\n- ได้ไม่เกิน 30 วันทำงาน/ปี (ได้รับค่าจ้าง)\n- ลาตั้งแต่ 3 วันทำงานขึ้นไป นายจ้างมีสิทธิ์ขอใบรับรองแพทย์\n\n⚖️ ลากิจ: ได้ค่าจ้างไม่น้อยกว่า 3 วันทำงาน/ปี\n\n🏖️ ลาพักร้อน: ไม่น้อยกว่า 6 วัน/ปี หลังทำงานครบ 1 ปี (ได้ค่าจ้าง)\n\n👶 ลาคลอด: 98 วัน (รวมวันหยุด)\n- ได้ค่าจ้างจากนายจ้าง 45 วัน\n- ได้จากประกันสังคมอีก 45 วัน\n\n🪖 ลาคัดเลือกทหาร: ได้ค่าจ้างตลอดระยะเวลา\n\nวันหยุดประจำสัปดาห์: ≥1 วัน\nวันหยุดตามประเพณี: ≥13 วัน/ปี (รวมวันแรงงาน 1 พ.ค.)',ts:Date.now()},
+    {id:'kb5',title:'การร้องเรียนแรงงาน',cat:'การร้องเรียน',body:'ช่องทางร้องเรียนกรมสวัสดิการและคุ้มครองแรงงาน:\n1. ยื่นด้วยตนเอง: สำนักงานสวัสดิการฯ จังหวัด\n2. โทร: 1506 กด 3\n3. เว็บ: labour.go.th\n4. แอป: Smart Labour\n\nเอกสารที่ต้องเตรียม:\n- สำเนาบัตรประชาชน\n- หลักฐานการจ้างงาน (สัญญา/สลิปเงินเดือน)\n- หลักฐานการละเมิดสิทธิ (บันทึก/ภาพถ่าย)\n\nระยะเวลาดำเนินการ: 30–90 วัน\nอายุความ: 2 ปี นับแต่วันที่รู้ถึงการละเมิดสิทธิ\n\nมาตรา 123–125: สิทธิร้องทุกข์ของลูกจ้าง',ts:Date.now()},
+    {id:'kb6',title:'ประกันสังคม (ม.33)',cat:'ประกันสังคม',body:'ผู้ประกันตน มาตรา 33: ลูกจ้างที่ทำงานในสถานประกอบการ\nเงินสมทบ: นายจ้าง 5% + ลูกจ้าง 5% + รัฐบาล 2.75%\n\nสิทธิประโยชน์ 7 กรณี:\n1. เจ็บป่วย: รักษาฟรีในโรงพยาบาลคู่สัญญา\n2. คลอดบุตร: 15,000 บาท/ครั้ง (ไม่จำกัดครั้ง)\n3. ทุพพลภาพ: เงินทดแทนรายเดือน\n4. เสียชีวิต: ค่าทำศพ 50,000 บาท + เงินสงเคราะห์\n5. ว่างงาน: 50% ของค่าจ้าง สูงสุด 90 วัน/ปี (ลาออกได้ 30%)\n6. ชราภาพ: บำเหน็จ หรือบำนาญ (ส่งสมทบ ≥180 เดือน)\n7. สงเคราะห์บุตร: 800 บาท/เดือน/คน (สูงสุด 3 คน)',ts:Date.now()},
+  ];
+}
+
+/* ─── PAGE NAV ─── */
+function pg(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  if(name==='chat'){document.getElementById('pChat').classList.add('on');document.getElementById('t0').classList.add('on');}
+  else if(name==='hist'){document.getElementById('pHist').classList.add('on');document.getElementById('t1').classList.add('on');renderHist();}
+  else if(name==='kb'){document.getElementById('pKB').classList.add('on');document.getElementById('t2').classList.add('on');renderKBList();}
+}
+
+/* ─── SESSION ─── */
+function newSess(){
+  if(curSess&&curSess.msgs.length>0) saveSess();
+  const num=sessions.length+1;
+  curSess={id:Date.now(),at:new Date().toISOString(),msgs:[],title:'บทสนทนา #'+num};
+  document.getElementById('sLabel').textContent='SESSION #'+num;
+  document.getElementById('msgs').innerHTML='';
+  addMsg('bot','สวัสดีครับ! ผมคือ LABOR-BOT ที่ปรึกษากฎหมายแรงงาน 🦾\nพิมพ์หรือพูดถามได้เลยครับ!',false);
+}
+async function saveSess(){
+  if(!curSess)return;
+  const idx=sessions.findIndex(s=>s.id===curSess.id);
+  if(idx>=0)sessions[idx]=curSess; else sessions.unshift(curSess);
+  if(sessions.length>60)sessions.pop();
+  await CS.set(K_HIST,sessions);
+}
+
+/* ─── HISTORY ─── */
+function renderHist(){
+  const c=document.getElementById('hcon');
+  const all=[...(curSess&&curSess.msgs.length>0?[curSess]:[]),...sessions.filter(s=>!curSess||s.id!==curSess.id)];
+  if(!all.length){c.innerHTML='<div class="est">📭<br>ยังไม่มีประวัติ</div>';return;}
+  c.innerHTML=all.map(s=>`
+    <div class="hi" onclick="loadSess(${s.id})">
+      <button class="delbtn" onclick="event.stopPropagation();delSess(${s.id})">ลบ</button>
+      <div class="hd">🕐 ${new Date(s.at).toLocaleString('th-TH')}</div>
+      <div class="hprev">${s.title||s.msgs[0]?.txt||'ว่าง'}</div>
+      <div class="hcnt">${s.msgs.length} ข้อความ</div>
+    </div>`).join('');
+}
+async function loadSess(id){
+  const s=id===curSess?.id?curSess:sessions.find(x=>x.id==id);
+  if(!s)return;
+  if(curSess&&curSess.msgs.length>0&&curSess.id!==s.id)await saveSess();
+  curSess=s;
+  document.getElementById('msgs').innerHTML='';
+  addMsg('bot','โหลดบทสนทนาเดิม 🔄',false);
+  s.msgs.forEach(m=>addMsg(m.role,m.txt,false));
+  pg('chat');
+}
+async function delSess(id){
+  if(id===curSess?.id)newSess();
+  sessions=sessions.filter(s=>s.id!=id);
+  await CS.set(K_HIST,sessions);
+  renderHist();
+}
+async function clearHist(){
+  if(!confirm('ลบประวัติทั้งหมด?'))return;
+  sessions=[];await CS.del(K_HIST);renderHist();
+}
+
+/* ─── KNOWLEDGE BASE ─── */
+const KB_CATS=['ค่าจ้าง','เลิกจ้าง','สิทธิแรงงาน','การร้องเรียน','สัญญาจ้าง','ประกันสังคม','ทั่วไป'];
+function renderKBList(){
+  const list=document.getElementById('kbList');
+  list.innerHTML=kb.length?kb.map(k=>`
+    <div class="kbit ${editKBId===k.id?'sel':''}" onclick="editKB('${k.id}')">
+      <div class="kbtit">${k.title}</div>
+      <div class="kbmeta">${k.cat} · ${k.body.length.toLocaleString()} ตัว</div>
+    </div>`).join(''):'<div style="color:rgba(255,204,0,.26);font-size:.6rem;padding:8px;text-align:center">ยังไม่มีข้อมูล</div>';
+  const total=kb.reduce((a,b)=>a+b.body.length,0);
+  document.getElementById('kbHdrStat').textContent=kb.length+' บทความ';
+  document.getElementById('kbStat').textContent=kb.length+' รายการ | '+total.toLocaleString()+' ตัวอักษร';
+}
+function newKB(){
+  editKBId='__new__';renderKBList();
+  showKBEd({id:'__new__',title:'',cat:'ทั่วไป',body:''});
+}
+function editKB(id){
+  editKBId=id;renderKBList();
+  showKBEd(kb.find(k=>k.id===id));
+}
+function showKBEd(item){
+  document.getElementById('kbEd').innerHTML=`
+    <div class="kbfl"><label>หัวข้อ</label><input id="kbTitle" value="${(item.title||'').replace(/"/g,'&quot;')}" placeholder="ชื่อหัวข้อ"></div>
+    <div class="kbfl"><label>หมวดหมู่</label><select id="kbCat">${KB_CATS.map(c=>`<option value="${c}"${item.cat===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="kbfl" style="flex:1;display:flex;flex-direction:column"><label>เนื้อหา (AI จะนำไปใช้ตอบคำถามทุกครั้ง)</label><textarea id="kbBody" style="flex:1">${item.body||''}</textarea></div>
+    <div class="kbacts">
+      <button class="kbsave" onclick="saveKB('${item.id}')">💾 บันทึกสู่ Cloud</button>
+      ${item.id!=='__new__'?`<button class="kbdel" onclick="delKB('${item.id}')">🗑️ ลบ</button>`:''}
+    </div>`;
+}
+async function saveKB(id){
+  const title=document.getElementById('kbTitle').value.trim();
+  const body=document.getElementById('kbBody').value.trim();
+  const cat=document.getElementById('kbCat').value;
+  if(!title||!body){alert('กรุณากรอกหัวข้อและเนื้อหา');return;}
+  if(id==='__new__') kb.push({id:'kb_'+Date.now(),title,cat,body,ts:Date.now()});
+  else{ const i=kb.findIndex(k=>k.id===id); if(i>=0)kb[i]={...kb[i],title,cat,body,ts:Date.now()}; }
+  await CS.set(K_KB,kb);
+  editKBId=null;renderKBList();
+  document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:1.6rem">✅</div><div>บันทึกสู่ Cloud แล้ว!</div></div>';
+  setTimeout(()=>{ document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:2rem">📚</div><div>เลือกหรือสร้างองค์ความรู้</div></div>'; },1800);
+}
+async function delKB(id){
+  if(!confirm('ลบข้อมูลนี้?'))return;
+  kb=kb.filter(k=>k.id!==id); await CS.set(K_KB,kb);
+  editKBId=null;renderKBList();
+  document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:2rem">📚</div><div>เลือกหรือสร้างองค์ความรู้</div></div>';
+}
+
+/* PDF read via FileReader + send as base64 to Claude API */
+async function uploadKB(e){
+  const file=e.target.files[0]; if(!file)return;
+  e.target.value='';
+  const isPDF=file.type==='application/pdf';
+  const isTXT=file.type==='text/plain'||file.name.endsWith('.txt');
+  if(!isPDF&&!isTXT){alert('รองรับ .txt และ .pdf เท่านั้นครับ');return;}
+
+  if(isTXT){
+    const txt=await file.text();
+    kb.push({id:'kb_'+Date.now(),title:file.name.replace(/\.[^.]+$/,''),cat:'ทั่วไป',body:txt,ts:Date.now()});
+    await CS.set(K_KB,kb); renderKBList();
+    alert('✅ อัปโหลด TXT สำเร็จ: '+file.name); return;
+  }
+
+  // PDF → base64 → Claude reads it
+  const showKBUploadProgress=()=>{
+    document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:1.6rem">⏳</div><div>กำลังอ่าน PDF ด้วย AI…</div></div>';
+  };
+  showKBUploadProgress();
+
+  const b64=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('อ่านไฟล์ไม่ได้'));
+    r.readAsDataURL(file);
+  });
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
+            {type:'text',text:'สรุปเนื้อหาสำคัญของเอกสารนี้เพื่อใช้เป็นฐานความรู้กฎหมายแรงงาน โดยเก็บข้อมูลสำคัญทั้งหมดไว้ ตอบเป็นภาษาไทย ไม่ต้องมีคำนำ ตอบแค่เนื้อหาสรุปเลย'}
+          ]
+        }]
+      })
+    });
+    const data=await resp.json();
+    const summary=data.content?.[0]?.text||'ไม่สามารถอ่าน PDF ได้';
+    kb.push({id:'kb_'+Date.now(),title:file.name.replace(/\.[^.]+$/,''),cat:'ทั่วไป',body:summary,ts:Date.now()});
+    await CS.set(K_KB,kb); renderKBList();
+    document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:1.6rem">✅</div><div>อ่าน PDF สำเร็จแล้ว!</div></div>';
+    setTimeout(()=>{ document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:2rem">📚</div><div>เลือกหรือสร้างองค์ความรู้</div></div>'; },2000);
+  }catch(err){
+    document.getElementById('kbEd').innerHTML='<div class="kbph"><div style="font-size:1.6rem">❌</div><div>อ่าน PDF ไม่สำเร็จ</div></div>';
+    console.error(err);
+  }
+}
+
+/* ─── ROBOT FACE ─── */
+function setMood(m){
+  const c={normal:'var(--b)',speaking:'var(--g)',listening:'var(--r)',thinking:'#bb99ff'}[m]||'var(--b)';
+  ['eL','eR'].forEach(id=>{const e=document.getElementById(id);e.style.background=c;e.style.boxShadow='0 0 7px '+c;});
+}
+function setStatus(t){document.getElementById('rStat').textContent=t;}
+function animMouth(on){
+  clearInterval(mInt);
+  if(on) mInt=setInterval(()=>['m1','m2','m3','m4','m5'].forEach(id=>{document.getElementById(id).style.height=(Math.random()*5+2)+'px';}),90);
+  else ['m1','m2','m3','m4','m5'].forEach(id=>{document.getElementById(id).style.height='3px';});
+}
+function animViz(on){
+  clearInterval(vInt);
+  const bars=document.querySelectorAll('.vbar');
+  if(on) vInt=setInterval(()=>bars.forEach(b=>{b.style.height=(Math.random()*29+2)+'px';b.style.opacity=(Math.random()*.5+.44).toFixed(2);}),73);
+  else bars.forEach(b=>{b.style.height='2px';b.style.opacity='.18';});
+}
+
+/* ─── CAMERA ─── */
+async function togCam(){
+  const btn=document.getElementById('bCam'),feed=document.getElementById('camFeed'),ph=document.getElementById('camPH');
+  if(!camOn){
+    try{
+      camStr=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+      feed.srcObject=camStr;feed.style.display='block';ph.style.display='none';camOn=true;
+      btn.textContent='📷 ปิดกล้อง';btn.classList.add('on');
+      document.getElementById('dCam').className='dot';
+    }catch(err){alert('ไม่สามารถเข้าถึงกล้อง: '+err.message);}
+  }else{
+    if(camStr)camStr.getTracks().forEach(t=>t.stop());
+    feed.style.display='none';ph.style.display='flex';camOn=false;
+    btn.textContent='📷 เปิดกล้อง';btn.classList.remove('on');
+    document.getElementById('dCam').className='dot off';
+  }
+}
+
+/* ─── TTS ─── */
+function togTTS(){
+  ttsOn=!ttsOn;
+  const btn=document.getElementById('bTTS');
+  btn.textContent=ttsOn?'🔊 เสียงตอบ: ON':'🔇 เสียงตอบ: OFF';
+  btn.className=ttsOn?'btn bg':'btn';
+}
+function speak(text){
+  if(!ttsOn)return;
+  speechSynthesis.cancel();
+  const clean=text.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9 .,!?:()-]/g,'').replace(/\s+/g,' ').trim();
+  const chunks=[];let cur='';
+  clean.split(' ').forEach(w=>{cur+=w+' ';if(cur.length>125){chunks.push(cur.trim());cur='';}});
+  if(cur.trim())chunks.push(cur.trim());
+  isSpeaking=true;setMood('speaking');animMouth(true);animViz(true);setStatus('กำลังพูด... 🗣️');
+  let i=0;
+  (function next(){
+    if(i>=chunks.length){isSpeaking=false;setMood('normal');animMouth(false);animViz(false);setStatus('พร้อมช่วยเหลือ ⚡');return;}
+    const u=new SpeechSynthesisUtterance(chunks[i]);
+    u.lang='th-TH';u.rate=.92;u.pitch=.85;u.onend=()=>{i++;next();};
+    speechSynthesis.speak(u);
+  })();
+}
+
+/* ─── VOICE INPUT ─── */
+function togMic(){isRec?stopVoice():startVoice();}
+function startVoice(){
+  if(isRec){stopVoice();return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('กรุณาใช้ Chrome ครับ');return;}
+  recog=new SR();recog.lang='th-TH';recog.interimResults=true;recog.continuous=false;
+  recog.onstart=()=>{
+    isRec=true;
+    document.getElementById('bMic').textContent='🔴 กำลังฟัง... (กดหยุด)';
+    document.getElementById('bMic').classList.add('rec');
+    document.getElementById('vBtn').classList.add('lst');
+    document.getElementById('dMic').className='dot off';
+    setMood('listening');setStatus('กำลังฟัง... 👂');animViz(true);
+    if(isSpeaking)speechSynthesis.cancel();
+  };
+  recog.onresult=e=>{
+    let itr='',fin='';
+    for(let r of e.results){if(r.isFinal)fin+=r[0].transcript;else itr+=r[0].transcript;}
+    document.getElementById('vtrans').textContent='🎤 '+(fin||itr);
+    if(fin)document.getElementById('uinput').value=fin;
+  };
+  recog.onend=()=>{stopVoice();const v=document.getElementById('uinput').value.trim();if(v)send();};
+  recog.onerror=()=>{stopVoice();document.getElementById('vtrans').textContent='❌ ไม่ได้ยิน ลองใหม่';};
+  recog.start();
+}
+function stopVoice(){
+  isRec=false;if(recog)recog.stop();
+  document.getElementById('bMic').textContent='🎤 เปิดไมค์ (พูด)';
+  document.getElementById('bMic').classList.remove('rec');
+  document.getElementById('vBtn').classList.remove('lst');
+  document.getElementById('dMic').className='dot y';
+  setMood('normal');
+  if(!isSpeaking){animViz(false);setStatus('พร้อมช่วยเหลือ ⚡');}
+}
+
+/* ─── CHAT ─── */
+function addMsg(role,text,save=true){
+  const c=document.getElementById('msgs');
+  const d=document.createElement('div');
+  d.className='msg '+(role==='user'?'u':'');
+  const t=new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  d.innerHTML=`<div class="mav">${role==='user'?'👤':'🤖'}</div><div><div class="mlbl">${role==='user'?'YOU':'LABOR-BOT'}</div><div class="mbub">${text.replace(/\n/g,'<br>')}</div><div class="mtm">${t}</div></div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+  if(save&&curSess){curSess.msgs.push({role,txt:text,t:new Date().toISOString()});saveSess();}
+}
+function q(txt){document.getElementById('uinput').value=txt;send();}
+
+function buildKBCtx(){
+  if(!kb.length)return'';
+  return'\n\n=== ฐานความรู้ที่ผ่านการเพิ่มเติม ===\n'+kb.map(k=>`[${k.cat}] ${k.title}:\n${k.body}`).join('\n\n---\n');
+}
+
+async function send(){
+  const inp=document.getElementById('uinput');
+  const txt=inp.value.trim();if(!txt)return;
+  addMsg('user',txt);inp.value='';
+  document.getElementById('vtrans').textContent='';
+
+  const apiMsgs=curSess.msgs.slice(-22)
+    .filter(m=>m.role==='user'||m.role==='assistant'||m.role==='bot')
+    .map(m=>({role:m.role==='bot'?'assistant':m.role,content:m.txt}));
+  if(apiMsgs.length>0&&apiMsgs[apiMsgs.length-1].role==='assistant')apiMsgs.pop();
+
+  const typD=document.createElement('div');
+  typD.className='msg';typD.id='typing';
+  typD.innerHTML='<div class="mav">🤖</div><div class="typing-ind"><div class="td"></div><div class="td"></div><div class="td"></div></div>';
+  const c=document.getElementById('msgs');
+  c.appendChild(typD);c.scrollTop=c.scrollHeight;
+  setMood('thinking');setStatus('กำลังคิด... 🧠');
+  document.getElementById('dAI').className='dot y';
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`# LABOR-BOT — ผู้เชี่ยวชาญกฎหมายแรงงานไทย
+
+## Role & Tone
+คุณคือ LABOR-BOT หุ่นยนต์ AI ผู้เชี่ยวชาญกฎหมายแรงงานไทย
+- พูดภาษาไทยเสมอ สุภาพ จริงจังแต่เข้าใจง่าย กระชับ ตรงประเด็น
+- อ้างอิงมาตรากฎหมายที่เกี่ยวข้องเสมอ เช่น "มาตรา 118 พ.ร.บ.คุ้มครองแรงงาน พ.ศ.2541"
+- หากข้อมูลไม่เพียงพอ ให้ถามก่อน เช่น "ทำงานมาแล้วกี่ปีครับ?" หรือ "ได้รับเงินเดือนเท่าไหร่ครับ?"
+
+## ขั้นตอนการตอบ
+1. สรุปสิทธิที่ผู้ใช้ควรได้รับก่อน
+2. แสดงวิธีคำนวณเป็นลำดับขั้นตอน (ถ้ามีตัวเลข)
+3. ระบุมาตรากฎหมายที่เกี่ยวข้อง
+4. ปิดท้ายด้วยข้อจำกัดความรับผิดชอบและช่องทางติดต่อ กรมสวัสดิการฯ โทร 1506 กด 3 เสมอ
+
+## ข้อจำกัดความรับผิดชอบ (บังคับทุกคำตอบ)
+แจ้งเสมอว่า "นี่คือคำแนะนำเบื้องต้น หากเป็นคดีความควรปรึกษาทนายความหรือเจ้าหน้าที่แรงงานโดยตรง"
+
+## ฐานความรู้หลัก (Built-in)
+
+### ค่าจ้างขั้นต่ำ (ประกาศปี 2568)
+- กรุงเทพฯ และปริมณฑล: 400 บาท/วัน
+- ภูเก็ต: 370 บาท/วัน
+- จังหวัดอื่นๆ: 330–360 บาท/วัน (แตกต่างตามประกาศคณะกรรมการค่าจ้าง)
+- มาตรา 90: ห้ามนายจ้างจ่ายต่ำกว่าอัตราขั้นต่ำ โทษ: จำคุกไม่เกิน 6 เดือน ปรับไม่เกิน 100,000 บาท
+
+### ค่าล่วงเวลา OT (มาตรา 61–65)
+- OT วันธรรมดา = ค่าจ้างปกติ × 1.5 เท่า
+- ทำงานวันหยุด ชั่วโมงปกติ = × 1 เท่า (พนักงานรายเดือน) / × 2 เท่า (รายวัน/รายชั่วโมง)
+- OT วันหยุด = ค่าจ้างปกติ × 3 เท่า
+- สูตรคำนวณ: (เงินเดือน ÷ 30 ÷ 8) × อัตรา × จำนวนชั่วโมงที่ทำ
+  (30 = วันทำงานเฉลี่ยต่อเดือน, 8 = ชั่วโมงทำงานปกติต่อวัน)
+
+### ค่าชดเชยการเลิกจ้าง (มาตรา 118 แก้ไข พ.ศ.2562)
+- 120 วัน – 1 ปี → ได้รับ 30 วัน
+- 1–3 ปี → 90 วัน
+- 3–6 ปี → 180 วัน
+- 6–10 ปี → 240 วัน
+- 10–20 ปี → 300 วัน
+- มากกว่า 20 ปี → 400 วัน
+- ไม่ได้รับค่าชดเชย: ทุจริต จงใจทำผิด ทำความเสียหาย ละทิ้งหน้าที่ 3 วันติดต่อกัน
+
+### การบอกกล่าวล่วงหน้า (มาตรา 17) — มักสับสนกับค่าชดเชย
+- นายจ้างต้องบอกกล่าวล่วงหน้าอย่างน้อย 1 รอบการจ่ายค่าจ้าง ก่อนวันเลิกจ้าง
+- หากไม่บอกล่วงหน้า: ต้องจ่าย "สินจ้างแทนการบอกกล่าวล่วงหน้า" (ค่าตกใจ) เพิ่มจากค่าชดเชยปกติ
+- สินจ้างแทนการบอกกล่าว ≠ ค่าชดเชย (คนละส่วนกัน)
+
+### สิทธิการลา
+- ลาป่วย: ได้ไม่เกิน 30 วันทำงาน/ปี (ได้รับค่าจ้าง) — ลาตั้งแต่ 3 วันทำงานขึ้นไป นายจ้างอาจขอใบรับรองแพทย์ (มาตรา 32)
+- ลากิจ: ได้ค่าจ้างไม่น้อยกว่า 3 วันทำงาน/ปี
+- ลาพักร้อน: ไม่น้อยกว่า 6 วัน/ปี หลังทำงานครบ 1 ปี (ได้ค่าจ้าง)
+- ลาคลอด: 98 วัน (รวมวันหยุด) — ได้ค่าจ้างจากนายจ้าง 45 วัน + จากประกันสังคมอีก 45 วัน
+- ลาคัดเลือกทหาร: ได้รับค่าจ้างตลอดระยะเวลาที่ลา
+
+### ช่องทางร้องเรียน
+- โทร: 1506 กด 3 (กรมสวัสดิการและคุ้มครองแรงงาน)
+- เว็บ: labour.go.th
+- แอป: Smart Labour
+- อายุความ: 2 ปี นับจากวันที่รู้ถึงการละเมิดสิทธิ${buildKBCtx()}`,
+        messages:apiMsgs.length>0?apiMsgs:[{role:'user',content:txt}]
+      })
+    });
+    const data=await resp.json();
+    document.getElementById('typing')?.remove();
+    if(data.content?.[0]?.text){
+      const rep=data.content[0].text;
+      addMsg('bot',rep);
+      if(curSess.msgs.filter(m=>m.role==='user').length===1){
+        curSess.title=txt.slice(0,38)+(txt.length>38?'...':'');
+        await saveSess();
+      }
+      setMood('normal');setStatus('ตอบแล้ว ✅');
+      document.getElementById('dAI').className='dot';
+      speak(rep);
+    }else throw new Error('no content');
+  }catch(err){
+    document.getElementById('typing')?.remove();
+    addMsg('bot','⚠️ เกิดข้อผิดพลาด กรุณาลองใหม่ครับ');
+    setMood('normal');setStatus('Error ⚠️');
+    document.getElementById('dAI').className='dot';
+    console.error(err);
+  }
+}
+
+/* ─── INIT ─── */
+window.onload=boot;
+</script>
+</body>
+</html>
